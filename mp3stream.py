@@ -1,38 +1,46 @@
-
 import urllib.request as urlreq
 import socket
 import threading
+import time
 clients = set()
+buffer = None
 
-extconn = urlreq.urlopen('STREAMLINK', timeout=60)
+url = 'LINK'
 
 def on_new_client(conn, addr):
     conn.send(bytes('HTTP/1.1 200 OK\r\n', 'utf-8')) # HTTP requests expect a 200 OK before any header or data
     conn.send(bytes("Content-Type: audio/mpeg\n\n", 'utf-8')) # Specify its a mp3 stream
+    conn.send(buffer)
 
 def bufferio():
     """
     Grabs the data from the url in extconn and broadcast it to all listening clients
     """
+    extconn = urlreq.urlopen(url, timeout=60)
     to_remove = set()
-    buffer = None
+    global buffer
     while(True):
-        buffer = extconn.read(16384) # Read 16kb of data from the stream
+        try:
+            buffer = extconn.read(16384) # Read 16kb of data from the stream
+        except ConnectionResetError:
+            time.sleep(5)
+            extconn = urlreq.urlopen(url, timeout=60)
+            buffer = extconn.read(16384)
         for c in clients: # broadcast to all clients
             try:
                 c.send(buffer)
             except ConnectionAbortedError: # Client disconnected
                 to_remove.add(c)
+            except BrokenPipeError:
+                to_remove.add(c)
         if len(to_remove) != 0:
             for c in to_remove:
-                _tmp = c.getpeername()
-                print("Disconnection from " + _tmp[0]+":"+str(_tmp[1]))
                 clients.remove(c)
             to_remove = set()
 
 threading.Thread(target=bufferio).start()
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-    server_socket.bind(("127.0.0.1", 5222)) # Listen on localhost on port 5222
+    server_socket.bind(("0.0.0.0", 5223)) # Listen on localhost on port 5222
     server_socket.listen(50)
     while True:
         conn, address = server_socket.accept()
