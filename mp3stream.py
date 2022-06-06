@@ -32,14 +32,15 @@ def bufferio():
         try:
             buffer = extconn.read(16384) # Read 16kb of data from the stream
         except ConnectionResetError:
+            print("A connection reset error has occured. Attempting to reconnect.")
             extconn = None
             while extconn == None:
                 try:
                     time.sleep(5)
                     extconn = urlreq.urlopen(url, timeout=60)
                     buffer = extconn.read(16384)
-                except urllib.error.URLError:
-                    pass
+                except urllib.error.URLError as exc:
+                    print(f"URL Error: {exc}")
 
         if len(to_add) != 0:
             for c in to_add:
