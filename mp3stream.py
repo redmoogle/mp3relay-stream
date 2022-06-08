@@ -3,10 +3,14 @@ import urllib
 import socket
 import threading
 import time
+import datetime
 
 clients = set()
 to_add = set()
 buffer = None
+
+buffertime = datetime.datetime.now()
+changeovertime = buffertime+datetime.timedelta(0,30)
 
 url = "LINK"
 
@@ -31,6 +35,11 @@ def bufferio():
     while(True):
         try:
             buffer = extconn.read(16384) # Read 16kb of data from the stream
+            if(datetime.datetime.now() > changeovertime):
+                _tmpconn = urlreq.urlopen(url, timeout=60)
+                extconn.close()
+                extconn = _tmpconn
+                print('Switched Streams')
         except ConnectionResetError:
             print("A connection reset error has occured. Attempting to reconnect.")
             extconn = None
