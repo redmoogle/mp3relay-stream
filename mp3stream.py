@@ -7,6 +7,7 @@ import time
 clients = set()
 to_add = set()
 buffer = None
+changeovertime = datetime.datetime.now()+datetime.timedelta(hours=1)
 
 url = "LINK"
 
@@ -27,10 +28,17 @@ def bufferio():
     global buffer
     global clients
     global to_add
+    global changeovertime
 
     while(True):
         try:
             buffer = extconn.read(16384) # Read 16kb of data from the stream
+            if(datetime.datetime.now() > changeovertime):
+                _tmpconn = urlreq.urlopen(url, timeout=60)
+                extconn.close()
+                extconn = _tmpconn
+                print('Streams have been changed over')
+                changeovertime = datetime.datetime.now()+datetime.timedelta(hours=1)
         except ConnectionResetError:
             print("A connection reset error has occured. Attempting to reconnect.")
             extconn = None
