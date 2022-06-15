@@ -18,7 +18,7 @@ extconn = None
 mp3_head = None
 next = 0
 
-url = "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3"
+url = "LINK"
 
 MPEG_ID = {
     '00': "MPEG Version 2.5",
@@ -464,7 +464,7 @@ def bufferio():
     logging.info("Beginning MP3 Relay Playback")
     while(True):
         try:
-            buffer = extconn.read(next*20) # Recieve 20 mp3 packets
+            buffer = extconn.read(next*30) # Recieve 30 mp3 packets
             if(buffer == b""):
                 logging.warn('Detecting empty data stream... Reconnecting')
                 reconnect()
