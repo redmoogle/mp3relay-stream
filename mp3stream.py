@@ -4,6 +4,12 @@ import socket
 import threading
 import time
 import math
+import logging
+
+logging.basicConfig(
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S')
 
 clients = set()
 to_add = set()
@@ -366,23 +372,31 @@ def on_new_client(conn, addr):
     conn.send(buffer)
     to_add.add(conn)
 
-def decode_mp3(header):
+def mp3_decode(header):
     header = header[11:34] # 21 Bits Remain
     mpeg = header[0:2]
     layer = header[2:4]
     bitrate = BITRATE[header[5:9]][mpeg][layer] # Skip CRC bit
     samplerate = SAMPLE_FREQ[header[9:11]][mpeg]
     padding = header[12]
+    return LAYER_ID[layer], bitrate, samplerate, padding
+
+def mp3_display(header):
+    header = header[11:34] # 21 Bits Remain
+    mpeg = header[0:2]
+    layer = header[2:4]
+    bitrate = BITRATE[header[5:9]][mpeg][layer] # Skip CRC bit
+    samplerate = SAMPLE_FREQ[header[9:11]][mpeg]
     private = PRIVATE[header[13]]
     stereo = STEREO[header[13:15]]
     copyrighted = COPYRIGHT[header[17]]
     original = ORIGINAL[header[18]]
-    print('MP3 STREAM DETECTED\n')
+
+    print('\nMP3 STREAM DETECTED\n')
     print(f'{MPEG_ID[mpeg]} | {LAYER_ID[layer]}')
     print(f'{bitrate/1000}kbps | {samplerate}Hz')
     print(f'{private} | {original} | {copyrighted}')
-    print(f'{stereo}')
-    return LAYER_ID[layer], bitrate, samplerate, padding
+    print(f'{stereo}\n')
 
 def mp3_next_header(layer, padding, bitrate, samplerate):
     # Layer I 32 bits ; Layer II & III 8 bits
@@ -417,20 +431,22 @@ def reconnect():
         try:
             extconn = urlreq.urlopen(url, timeout=60)
         except (HTTPError, URLError, ConnectionError) as err:
-            print(err)
+            logging.error(err)
             extconn = None
             time.sleep(5)
 
-    print("Waiting for MP3 Sync")
+    logging.info("Waiting for MP3 Sync")
     while(syncs < 20):
         buffer = extconn.read(4) # Read the mp3 header
         header = "{:08b}".format(int(buffer[0:4].hex(), 16))
         if(header[0:11] == '11111111111'):
-            layer, bitrate, samplerate, padding = decode_mp3(header) # were going to forge our own packets
+            layer, bitrate, samplerate, padding = mp3_decode(header) # were going to forge our own packets
             next = mp3_next_header(layer, padding, bitrate, samplerate)
             mp3_head = buffer
             syncs += 1
         extconn.read(next-4) # This will mess up any invalid headers
+
+    mp3_display("{:08b}".format(int(mp3_head.hex(), 16)))
 
 def bufferio():
     """
@@ -445,16 +461,16 @@ def bufferio():
 
     reconnect()
 
-    print("Beginning MP3 Relay Playback")
+    logging.info("Beginning MP3 Relay Playback")
     while(True):
         try:
             buffer = extconn.read(next*20) # Recieve 20 mp3 packets
             if(buffer == b""):
-                print('Detecting empty data stream... Reconnecting')
+                logging.warn('Detecting empty data stream... Reconnecting')
                 reconnect()
                 continue
         except (HTTPError, ConnectionError, URLError) as err:
-            print(err)
+            logging.error(err)
             reconnect()
             continue
 
