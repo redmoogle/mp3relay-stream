@@ -1,18 +1,16 @@
-from re import M
-from tkinter.messagebox import NO
-from turtle import st
+from urllib.error import HTTPError, URLError
 import urllib.request as urlreq
-import urllib
 import socket
 import threading
 import time
-import datetime
-from wsgiref import headers
+import math
 
 clients = set()
 to_add = set()
 buffer = None
-changeovertime = datetime.datetime.now()+datetime.timedelta(hours=1)
+extconn = None
+mp3_head = None
+next = 0
 
 url = "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3"
 
@@ -56,240 +54,240 @@ BITRATE = {
     },
     '0001': {
         '00': { # V2.5
-            '01': '8Kbps', # L3
-            '10': '8Kbps', # L2
-            '11': '32Kbps' # L1
+            '01': 8000, # L3
+            '10': 8000, # L2
+            '11': 32000 # L1
         },
         '10': { # V2
-            '01': '8Kbps', # L3
-            '10': '8Kbps', # L2
-            '11': '32Kbps' # L1
+            '01': 8000, # L3
+            '10': 8000, # L2
+            '11': 32000 # L1
         },
         '11': { # V1
-            '01': '32Kbps', # L3
-            '10': '32Kbps', # L2
-            '11': '32Kbps'  # L1
+            '01': 32000, # L3
+            '10': 32000, # L2
+            '11': 32000  # L1
         },
     },
     '0010': {
         '00': { # V2.5
-            '01': '16Kbps', # L3
-            '10': '16Kbps', # L2
-            '11': '48Kbps' # L1
+            '01': 16000, # L3
+            '10': 16000, # L2
+            '11': 48000 # L1
         },
         '10': { # V2
-            '01': '16Kbps', # L3
-            '10': '16Kbps', # L2
-            '11': '48Kbps' # L1
+            '01': 16000, # L3
+            '10': 16000, # L2
+            '11': 48000 # L1
         },
         '11': { # V1
-            '01': '40Kbps', # L3
-            '10': '48Kbps', # L2
-            '11': '64Kbps'  # L1
+            '01': 40000, # L3
+            '10': 48000, # L2
+            '11': 64000  # L1
         },
     },
     '0011': {
         '00': { # V2.5
-            '01': '24Kbps', # L3
-            '10': '24Kbps', # L2
-            '11': '56Kbps' # L1
+            '01': 24000, # L3
+            '10': 24000, # L2
+            '11': 56000 # L1
         },
         '10': { # V2
-            '01': '24Kbps', # L3
-            '10': '24Kbps', # L2
-            '11': '56Kbps' # L1
+            '01': 24000, # L3
+            '10': 24000, # L2
+            '11': 56000 # L1
         },
         '11': { # V1
-            '01': '48Kbps', # L3
-            '10': '56Kbps', # L2
-            '11': '96Kbps'  # L1
+            '01': 48000, # L3
+            '10': 56000, # L2
+            '11': 96000  # L1
         },
     },
     '0100': {
         '00': { # V2.5
-            '01': '32Kbps', # L3
-            '10': '32Kbps', # L2
-            '11': '64Kbps' # L1
+            '01': 32000, # L3
+            '10': 32000, # L2
+            '11': 64000 # L1
         },
         '10': { # V2
-            '01': '32Kbps', # L3
-            '10': '32Kbps', # L2
-            '11': '64Kbps' # L1
+            '01': 32000, # L3
+            '10': 32000, # L2
+            '11': 64000 # L1
         },
         '11': { # V1
-            '01': '56Kbps', # L3
-            '10': '64Kbps', # L2
-            '11': '128Kbps'  # L1
+            '01': 56000, # L3
+            '10': 64000, # L2
+            '11': 128000  # L1
         },
     },
     '0101': {
         '00': { # V2.5
-            '01': '40Kbps', # L3
-            '10': '40Kbps', # L2
-            '11': '80Kbps' # L1
+            '01': 40000, # L3
+            '10': 40000, # L2
+            '11': 80000 # L1
         },
         '10': { # V2
-            '01': '40Kbps', # L3
-            '10': '40Kbps', # L2
-            '11': '80Kbps' # L1
+            '01': 40000, # L3
+            '10': 40000, # L2
+            '11': 80000 # L1
         },
         '11': { # V1
-            '01': '64Kbps', # L3
-            '10': '80Kbps', # L2
-            '11': '160Kbps'  # L1
+            '01': 64000, # L3
+            '10': 80000, # L2
+            '11': 160000  # L1
         },
     },
     '0110': {
         '00': { # V2.5
-            '01': '48Kbps', # L3
-            '10': '48Kbps', # L2
-            '11': '96Kbps' # L1
+            '01': 48000, # L3
+            '10': 48000, # L2
+            '11': 96000 # L1
         },
         '10': { # V2
-            '01': '48Kbps', # L3
-            '10': '48Kbps', # L2
-            '11': '96Kbps' # L1
+            '01': 48000, # L3
+            '10': 48000, # L2
+            '11': 96000 # L1
         },
         '11': { # V1
-            '01': '80Kbps', # L3
-            '10': '96Kbps', # L2
-            '11': '192Kbps'  # L1
+            '01': 80000, # L3
+            '10': 96000, # L2
+            '11': 192000  # L1
         },
     },
     '0111': {
         '00': { # V2.5
-            '01': '56Kbps', # L3
-            '10': '56Kbps', # L2
-            '11': '112Kbps' # L1
+            '01': 56000, # L3
+            '10': 56000, # L2
+            '11': 112000 # L1
         },
         '10': { # V2
-            '01': '56Kbps', # L3
-            '10': '56Kbps', # L2
-            '11': '112Kbps' # L1
+            '01': 56000, # L3
+            '10': 56000, # L2
+            '11': 112000 # L1
         },
         '11': { # V1
-            '01': '96Kbps', # L3
-            '10': '112Kbps', # L2
-            '11': '224Kbps'  # L1
+            '01': 96000, # L3
+            '10': 112000, # L2
+            '11': 224000  # L1
         },
     },
     '1000': {
         '00': { # V2.5
-            '01': '64Kbps', # L3
-            '10': '64Kbps', # L2
-            '11': '128Kbps' # L1
+            '01': 64000, # L3
+            '10': 64000, # L2
+            '11': 128000 # L1
         },
         '10': { # V2
-            '01': '64Kbps', # L3
-            '10': '64Kbps', # L2
-            '11': '128Kbps' # L1
+            '01': 64000, # L3
+            '10': 64000, # L2
+            '11': 128000 # L1
         },
         '11': { # V1
-            '01': '112Kbps', # L3
-            '10': '128Kbps', # L2
-            '11': '256Kbps'  # L1
+            '01': 112000, # L3
+            '10': 128000, # L2
+            '11': 256000  # L1
         },
     },
     '1001': {
         '00': { # V2.5
-            '01': '80Kbps', # L3
-            '10': '80Kbps', # L2
-            '11': '144Kbps' # L1
+            '01': 80000, # L3
+            '10': 80000, # L2
+            '11': 144000 # L1
         },
         '10': { # V2
-            '01': '80Kbps', # L3
-            '10': '80Kbps', # L2
-            '11': '144Kbps' # L1
+            '01': 80000, # L3
+            '10': 80000, # L2
+            '11': 144000 # L1
         },
         '11': { # V1
-            '01': '128Kbps', # L3
-            '10': '160Kbps', # L2
-            '11': '288Kbps'  # L1
+            '01': 128000, # L3
+            '10': 160000, # L2
+            '11': 288000  # L1
         },
     },
     '1010': {
         '00': { # V2.5
-            '01': '96Kbps', # L3
-            '10': '96Kbps', # L2
-            '11': '160Kbps' # L1
+            '01': 96000, # L3
+            '10': 96000, # L2
+            '11': 160000 # L1
         },
         '10': { # V2
-            '01': '96Kbps', # L3
-            '10': '96Kbps', # L2
-            '11': '160Kbps' # L1
+            '01': 96000, # L3
+            '10': 96000, # L2
+            '11': 160000 # L1
         },
         '11': { # V1
-            '01': '160Kbps', # L3
-            '10': '192Kbps', # L2
-            '11': '320Kbps'  # L1
+            '01': 160000, # L3
+            '10': 192000, # L2
+            '11': 320000  # L1
         },
     },
     '1011': {
         '00': { # V2.5
-            '01': '112Kbps', # L3
-            '10': '112Kbps', # L2
-            '11': '176Kbps' # L1
+            '01': 112000, # L3
+            '10': 112000, # L2
+            '11': 176000 # L1
         },
         '10': { # V2
-            '01': '112Kbps', # L3
-            '10': '112Kbps', # L2
-            '11': '176Kbps' # L1
+            '01': 112000, # L3
+            '10': 112000, # L2
+            '11': 176000 # L1
         },
         '11': { # V1
-            '01': '192Kbps', # L3
-            '10': '224Kbps', # L2
-            '11': '352Kbps'  # L1
+            '01': 192000, # L3
+            '10': 224000, # L2
+            '11': 352000  # L1
         },
     },
     '1100': {
         '00': { # V2.5
-            '01': '128Kbps', # L3
-            '10': '128Kbps', # L2
-            '11': '192Kbps' # L1
+            '01': 128000, # L3
+            '10': 128000, # L2
+            '11': 192000 # L1
         },
         '10': { # V2
-            '01': '128Kbps', # L3
-            '10': '128Kbps', # L2
-            '11': '192Kbps' # L1
+            '01': 128000, # L3
+            '10': 128000, # L2
+            '11': 192000 # L1
         },
         '11': { # V1
-            '01': '224Kbps', # L3
-            '10': '256Kbps', # L2
-            '11': '384Kbps'  # L1
+            '01': 224000, # L3
+            '10': 256000, # L2
+            '11': 384000  # L1
         },
     },
     '1101': {
         '00': { # V2.5
-            '01': '144Kbps', # L3
-            '10': '144Kbps', # L2
-            '11': '224Kbps' # L1
+            '01': 144000, # L3
+            '10': 144000, # L2
+            '11': 224000 # L1
         },
         '10': { # V2
-            '01': '144Kbps', # L3
-            '10': '144Kbps', # L2
-            '11': '224Kbps' # L1
+            '01': 144000, # L3
+            '10': 144000, # L2
+            '11': 224000 # L1
         },
         '11': { # V1
-            '01': '256Kbps', # L3
-            '10': '320Kbps', # L2
-            '11': '416Kbps'  # L1
+            '01': 256000, # L3
+            '10': 320000, # L2
+            '11': 416000  # L1
         },
     },
     '1110': {
         '00': { # V2.5
-            '01': '160Kbps', # L3
-            '10': '160Kbps', # L2
-            '11': '256Kbps' # L1
+            '01': 160000, # L3
+            '10': 160000, # L2
+            '11': 256000 # L1
         },
         '10': { # V2
-            '01': '160Kbps', # L3
-            '10': '160Kbps', # L2
-            '11': '256Kbps' # L1
+            '01': 160000, # L3
+            '10': 160000, # L2
+            '11': 256000 # L1
         },
         '11': { # V1
-            '01': '320Kbps', # L3
-            '10': '384Kbps', # L2
-            '11': '448Kbps'  # L1
+            '01': 320000, # L3
+            '10': 384000, # L2
+            '11': 448000  # L1
         },
     },
     '1111': {
@@ -313,19 +311,19 @@ BITRATE = {
 
 SAMPLE_FREQ = {
     '00' : {
-        '00': '11025Hz', # L2.5
-        '10': '22050Hz', # L2
-        '11': '44100Hz'  # L1
+        '00': 11025, # L2.5
+        '10': 22050, # L2
+        '11': 44100  # L1
     },
     '01': {
-        '00': '12000Hz', # L2.5
-        '10': '24000Hz', # L2
-        '11': '48000Hz'  # L1
+        '00': 12000, # L2.5
+        '10': 24000, # L2
+        '11': 48000  # L1
     },
     '10': {
-        '00': '8000Hz', # L2.5
-        '10': '16000Hz', # L2
-        '11': '32000Hz'  # L1
+        '00': 8000, # L2.5
+        '10': 16000, # L2
+        '11': 32000  # L1
     },
     '11': {
         '00': 'Reserved Sampling Frequency', # L2.5
@@ -335,13 +333,13 @@ SAMPLE_FREQ = {
 }
 
 PADDING = {
-    '1': 'Padded Frame',
-    '0': 'Unpadded Frame'
+    '1': 'Padded',
+    '0': 'Unpadded'
 }
 
 PRIVATE = {
-    '1': 'Private Stream',
-    '0': 'Public Stream'
+    '1': 'Private',
+    '0': 'Public'
 }
 
 STEREO = {
@@ -352,13 +350,13 @@ STEREO = {
 }
 
 COPYRIGHT = {
-    '1': 'Copyrighted Stream',
-    '0': 'Uncopyrighted Stream'
+    '1': 'Copyrighted',
+    '0': 'Uncopyrighted'
 }
 
 ORIGINAL = {
-    '1': 'Original Media',
-    '0': 'Copied Media'
+    '1': 'Original',
+    '0': 'Copied'
 }
 
 def on_new_client(conn, addr):
@@ -368,60 +366,97 @@ def on_new_client(conn, addr):
     conn.send(buffer)
     to_add.add(conn)
 
+def decode_mp3(header):
+    header = header[11:34] # 21 Bits Remain
+    mpeg = header[0:2]
+    layer = header[2:4]
+    bitrate = BITRATE[header[5:9]][mpeg][layer] # Skip CRC bit
+    samplerate = SAMPLE_FREQ[header[9:11]][mpeg]
+    padding = header[12]
+    private = PRIVATE[header[13]]
+    stereo = STEREO[header[13:15]]
+    copyrighted = COPYRIGHT[header[17]]
+    original = ORIGINAL[header[18]]
+    print('MP3 STREAM DETECTED\n')
+    print(f'{MPEG_ID[mpeg]} | {LAYER_ID[layer]}')
+    print(f'{bitrate/1000}kbps | {samplerate}Hz')
+    print(f'{private} | {original} | {copyrighted}')
+    print(f'{stereo}')
+    return LAYER_ID[layer], bitrate, samplerate, padding
+
+def mp3_next_header(layer, padding, bitrate, samplerate):
+    # Layer I 32 bits ; Layer II & III 8 bits
+    # For Layer I files us this formula:
+    # FrameLengthInBytes = (12 * BitRate / SampleRate + Padding) * 4
+    # For Layer II & III files use this formula:
+    # FrameLengthInBytes = 144 * BitRate / SampleRate + Padding
+
+    if(layer == 'Layer I'):
+        padding_add = 0
+        if padding == '1':
+            padding_add = 32
+        
+        return math.floor((12 * (bitrate/samplerate) + padding_add) * 4)
+    elif (layer == 'Layer II') or (layer == 'Layer III'):
+        padding_add = 0
+        if padding == '1':
+            padding_add = 8
+        
+        return math.floor(144 * (bitrate/samplerate) + padding_add)
+
+def reconnect():
+    global extconn
+    global mp3_head
+    global next
+    if(extconn):
+        extconn.close()
+        extconn = None
+    syncs = 0 # Make sure we have the right header
+
+    while extconn == None:
+        try:
+            extconn = urlreq.urlopen(url, timeout=60)
+        except (HTTPError, URLError, ConnectionError) as err:
+            print(err)
+            extconn = None
+            time.sleep(5)
+
+    print("Waiting for MP3 Sync")
+    while(syncs < 20):
+        buffer = extconn.read(4) # Read the mp3 header
+        header = "{:08b}".format(int(buffer[0:4].hex(), 16))
+        if(header[0:11] == '11111111111'):
+            layer, bitrate, samplerate, padding = decode_mp3(header) # were going to forge our own packets
+            next = mp3_next_header(layer, padding, bitrate, samplerate)
+            mp3_head = buffer
+            syncs += 1
+        extconn.read(next-4) # This will mess up any invalid headers
+
 def bufferio():
     """
     Grabs the data from the url in extconn and broadcast it to all listening clients
     """
-    extconn = urlreq.urlopen(url, timeout=60)
     to_remove = set()
 
     global buffer
     global clients
+    global extconn
     global to_add
-    global changeovertime
 
+    reconnect()
+
+    print("Beginning MP3 Relay Playback")
     while(True):
         try:
-            buffer = extconn.read(1024*16) # Read 16kb of data from the stream
-            header = "{:08b}".format(int(buffer[0:4].hex(), 16))
-            if(header[0:11] == '11111111111'):
-                header = header[11:34] # 21 Bits Remain
-                print('MP3 STREAM DETECTED')
-                mpeg = header[0:2]
-                layer = header[2:4]
-                bitrate = BITRATE[header[5:9]][mpeg][layer] # Skip CRC bit
-                samplerate = SAMPLE_FREQ[header[9:11]][mpeg]
-                private = PRIVATE[header[13]] # Skip Padding bit
-                stereo = STEREO[header[13:15]]
-                copyrighted = COPYRIGHT[header[17]]
-                original = ORIGINAL[header[18]]
-                print(f'{MPEG_ID[mpeg]} | {LAYER_ID[layer]}')
-                print(f'{bitrate} | {samplerate}')
-                print(f'{private} | {original} | {copyrighted}')
-                print(f'{stereo}')
-
+            buffer = extconn.read(next*20) # Recieve 20 mp3 packets
             if(buffer == b""):
-                _tmpconn = urlreq.urlopen(url, timeout=60)
-                extconn.close()
-                extconn = _tmpconn
-                print('Detecting empty buffer restarting stream')
-                changeovertime = datetime.datetime.now()+datetime.timedelta(hours=1)
-            if(datetime.datetime.now() > changeovertime):
-                _tmpconn = urlreq.urlopen(url, timeout=60)
-                extconn.close()
-                extconn = _tmpconn
-                print('Streams have been changed over')
-                changeovertime = datetime.datetime.now()+datetime.timedelta(hours=1)
-        except ConnectionResetError:
-            print("A connection reset error has occured. Attempting to reconnect.")
-            extconn = None
-            while extconn == None:
-                try:
-                    time.sleep(5)
-                    extconn = urlreq.urlopen(url, timeout=60)
-                    buffer = extconn.read(16384)
-                except urllib.error.URLError as exc:
-                    print(f"URL Error: {exc}")
+                print('Detecting empty data stream... Reconnecting')
+                reconnect()
+                continue
+        except (HTTPError, ConnectionError, URLError) as err:
+            print(err)
+            reconnect()
+            continue
 
         if len(to_add) != 0:
             for c in to_add:
@@ -443,7 +478,7 @@ def bufferio():
 
 threading.Thread(target=bufferio).start()
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-    addr, port = '0.0.0.0', 5222
+    addr, port = '127.0.0.1', 5222
     server_socket.bind((addr, port)) # Listen on localhost on port 5222
     server_socket.listen(50)
     print(f'listening to {addr} on port {port}')
