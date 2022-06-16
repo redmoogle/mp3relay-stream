@@ -43,19 +43,22 @@ CRC_MODE = {
 BITRATE = {
     '0000': {
         '00': { # V2.5
-            '01': 'Variable/Free', # L3
-            '10': 'Variable/Free', # L2
-            '11': 'Variable/Free'  # L1
+            '01': False, # L3
+            '10': False, # L2
+            '11': False,  # L1
+            '00': False
         },
         '10': { # V2
-            '01': 'Variable/Free', # L3
-            '10': 'Variable/Free', # L2
-            '11': 'Variable/Free'  # L1
+            '01': False, # L3
+            '10': False, # L2
+            '11': False,  # L1
+            '00': False
         },
         '11': { # V1
-            '01': 'Variable/Free', # L3
-            '10': 'Variable/Free', # L2
-            '11': 'Variable/Free'  # L1
+            '01': False, # L3
+            '10': False, # L2
+            '11': False,  # L1
+            '00': False
         },
     },
     '0001': {
@@ -72,7 +75,8 @@ BITRATE = {
         '11': { # V1
             '01': 32000, # L3
             '10': 32000, # L2
-            '11': 32000  # L1
+            '11': 32000,  # L1
+            '00': False
         },
     },
     '0010': {
@@ -89,7 +93,8 @@ BITRATE = {
         '11': { # V1
             '01': 40000, # L3
             '10': 48000, # L2
-            '11': 64000  # L1
+            '11': 64000,  # L1
+            '00': False
         },
     },
     '0011': {
@@ -106,7 +111,8 @@ BITRATE = {
         '11': { # V1
             '01': 48000, # L3
             '10': 56000, # L2
-            '11': 96000  # L1
+            '11': 96000,  # L1
+            '00': False
         },
     },
     '0100': {
@@ -123,7 +129,8 @@ BITRATE = {
         '11': { # V1
             '01': 56000, # L3
             '10': 64000, # L2
-            '11': 128000  # L1
+            '11': 128000,  # L1
+            '00': False
         },
     },
     '0101': {
@@ -140,7 +147,8 @@ BITRATE = {
         '11': { # V1
             '01': 64000, # L3
             '10': 80000, # L2
-            '11': 160000  # L1
+            '11': 160000,  # L1
+            '00': False
         },
     },
     '0110': {
@@ -157,7 +165,8 @@ BITRATE = {
         '11': { # V1
             '01': 80000, # L3
             '10': 96000, # L2
-            '11': 192000  # L1
+            '11': 192000,  # L1
+            '00': False
         },
     },
     '0111': {
@@ -174,7 +183,8 @@ BITRATE = {
         '11': { # V1
             '01': 96000, # L3
             '10': 112000, # L2
-            '11': 224000  # L1
+            '11': 224000,  # L1
+            '00': False
         },
     },
     '1000': {
@@ -191,7 +201,8 @@ BITRATE = {
         '11': { # V1
             '01': 112000, # L3
             '10': 128000, # L2
-            '11': 256000  # L1
+            '11': 256000,  # L1
+            '00': False
         },
     },
     '1001': {
@@ -208,7 +219,8 @@ BITRATE = {
         '11': { # V1
             '01': 128000, # L3
             '10': 160000, # L2
-            '11': 288000  # L1
+            '11': 288000,  # L1
+            '00': False
         },
     },
     '1010': {
@@ -225,7 +237,8 @@ BITRATE = {
         '11': { # V1
             '01': 160000, # L3
             '10': 192000, # L2
-            '11': 320000  # L1
+            '11': 320000,  # L1
+            '00': False
         },
     },
     '1011': {
@@ -242,7 +255,8 @@ BITRATE = {
         '11': { # V1
             '01': 192000, # L3
             '10': 224000, # L2
-            '11': 352000  # L1
+            '11': 352000,  # L1
+            '00': False
         },
     },
     '1100': {
@@ -259,7 +273,8 @@ BITRATE = {
         '11': { # V1
             '01': 224000, # L3
             '10': 256000, # L2
-            '11': 384000  # L1
+            '11': 384000,  # L1
+            '00': False
         },
     },
     '1101': {
@@ -276,7 +291,8 @@ BITRATE = {
         '11': { # V1
             '01': 256000, # L3
             '10': 320000, # L2
-            '11': 416000  # L1
+            '11': 416000,  # L1
+            '00': False
         },
     },
     '1110': {
@@ -293,24 +309,26 @@ BITRATE = {
         '11': { # V1
             '01': 320000, # L3
             '10': 384000, # L2
-            '11': 448000  # L1
+            '11': 448000,  # L1
+            '00': False
         },
     },
     '1111': {
         '00': { # V2.5
-            '01': 'Invalid Bitrate', # L3
-            '10': 'Invalid Bitrate', # L2
-            '11': 'Invalid Bitrate' # L1
+            '01': False, # L3
+            '10': False, # L2
+            '11': False # L1
         },
         '10': { # V2
-            '01': 'Invalid Bitrate', # L3
-            '10': 'Invalid Bitrate', # L2
-            '11': 'Invalid Bitrate' # L1
+            '01': False, # L3
+            '10': False, # L2
+            '11': False # L1
         },
         '11': { # V1
-            '01': 'Invalid Bitrate', # L3
-            '10': 'Invalid Bitrate', # L2
-            '11': 'Invalid Bitrate'  # L1
+            '01': False, # L3
+            '10': False, # L2
+            '11': False,  # L1
+            '00': False
         },
     }
 }
@@ -319,22 +337,22 @@ SAMPLE_FREQ = {
     '00' : {
         '00': 11025, # L2.5
         '10': 22050, # L2
-        '11': 44100  # L1
+        '11': 44100,  # L1
     },
     '01': {
         '00': 12000, # L2.5
         '10': 24000, # L2
-        '11': 48000  # L1
+        '11': 48000,  # L1
     },
     '10': {
         '00': 8000, # L2.5
         '10': 16000, # L2
-        '11': 32000  # L1
+        '11': 32000,  # L1
     },
     '11': {
-        '00': 'Reserved Sampling Frequency', # L2.5
-        '10': 'Reserved Sampling Frequency', # L2
-        '11': 'Reserved Sampling Frequency'  # L1
+        '00': 1, # L2.5
+        '10': 1, # L2
+        '11': 1,  # L1
     }
 }
 
@@ -369,17 +387,17 @@ def on_new_client(conn, addr):
     global to_add
     conn.send(bytes('HTTP/1.1 200 OK\r\n', 'utf-8')) # HTTP requests expect a 200 OK before any header or data
     conn.send(bytes("Content-Type: audio/mpeg\n\n", 'utf-8')) # Specify its a mp3 stream
-    conn.send(buffer)
     to_add.add(conn)
 
 def mp3_decode(header):
     header = header[11:34] # 21 Bits Remain
     mpeg = header[0:2]
     layer = header[2:4]
+    crc = header[4]
     bitrate = BITRATE[header[5:9]][mpeg][layer] # Skip CRC bit
     samplerate = SAMPLE_FREQ[header[9:11]][mpeg]
     padding = header[12]
-    return LAYER_ID[layer], bitrate, samplerate, padding
+    return LAYER_ID[layer], bitrate, samplerate, padding, crc
 
 def mp3_display(header):
     header = header[11:34] # 21 Bits Remain
@@ -398,7 +416,7 @@ def mp3_display(header):
     print(f'{private} | {original} | {copyrighted}')
     print(f'{stereo}\n')
 
-def mp3_next_header(layer, padding, bitrate, samplerate):
+def mp3_next_header(layer, padding, bitrate, samplerate, crc):
     # Layer I 32 bits ; Layer II & III 8 bits
     # For Layer I files us this formula:
     # FrameLengthInBytes = (12 * BitRate / SampleRate + Padding) * 4
@@ -407,16 +425,24 @@ def mp3_next_header(layer, padding, bitrate, samplerate):
 
     if(layer == 'Layer I'):
         padding_add = 0
+        crc_add = 0
         if padding == '1':
-            padding_add = 32
+            padding_add = 4
+
+        if crc == '0':
+            crc_add = 2
         
-        return math.floor((12 * (bitrate/samplerate) + padding_add) * 4)
+        return math.floor((12 * (bitrate/samplerate) + padding_add) * 4) + crc_add
     elif (layer == 'Layer II') or (layer == 'Layer III'):
         padding_add = 0
+        crc_add = 0
         if padding == '1':
-            padding_add = 8
+            padding_add = 1
+
+        if crc == '0':
+            crc_add = 2
         
-        return math.floor(144 * (bitrate/samplerate) + padding_add)
+        return math.floor(144 * (bitrate/samplerate) + padding_add) + crc_add
 
 def reconnect():
     global extconn
@@ -440,8 +466,8 @@ def reconnect():
         buffer = extconn.read(4) # Read the mp3 header
         header = "{:08b}".format(int(buffer[0:4].hex(), 16))
         if(header[0:11] == '11111111111'):
-            layer, bitrate, samplerate, padding = mp3_decode(header) # were going to forge our own packets
-            next = mp3_next_header(layer, padding, bitrate, samplerate)
+            layer, bitrate, samplerate, padding, crc = mp3_decode(header) # were going to forge our own packets
+            next = mp3_next_header(layer, padding, bitrate, samplerate, crc)
             mp3_head = buffer
             syncs += 1
         extconn.read(next-4) # This will mess up any invalid headers
@@ -458,13 +484,17 @@ def bufferio():
     global clients
     global extconn
     global to_add
+    global next
 
     reconnect()
 
     logging.info("Beginning MP3 Relay Playback")
     while(True):
         try:
-            buffer = extconn.read(next*30) # Recieve 30 mp3 packets
+            buffer = extconn.read(next) # Recieve 30 mp3 packets
+            header = "{:08b}".format(int(buffer.hex(), 16))
+            layer, bitrate, samplerate, padding, crc = mp3_decode(header) # were going to forge our own packets
+            next = mp3_next_header(layer, padding, bitrate, samplerate, crc)
             if(buffer == b""):
                 logging.warn('Detecting empty data stream... Reconnecting')
                 reconnect()
@@ -494,7 +524,7 @@ def bufferio():
 
 threading.Thread(target=bufferio).start()
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-    addr, port = '127.0.0.1', 5222
+    addr, port = '0.0.0.0', 5222
     server_socket.bind((addr, port)) # Listen on localhost on port 5222
     server_socket.listen(50)
     print(f'listening to {addr} on port {port}')
