@@ -5,6 +5,7 @@ import threading
 import time
 import math
 import logging
+import mp3packet
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -18,431 +19,13 @@ extconn = None
 mp3_head = None
 next = 0
 
-url = "LINK"
-
-MPEG_ID = {
-    '00': "MPEG Version 2.5",
-    '01': "Invalid/Reserved Version",
-    '10': "MPEG Version 2",
-    '11': "MPEG Version 1"
-}
-
-LAYER_ID = {
-    '00': "Invalid/Reserved Layer",
-    '01': "Layer III",
-    '10': "Layer II",
-    '11': "Layer I"
-}
-
-CRC_MODE = {
-    '0': "CRC ON",
-    '1': "CRC OFF"
-}
-
-# Hell
-BITRATE = {
-    '0000': {
-        '00': { # V2.5
-            '01': False, # L3
-            '10': False, # L2
-            '11': False,  # L1
-            '00': False
-        },
-        '10': { # V2
-            '01': False, # L3
-            '10': False, # L2
-            '11': False,  # L1
-            '00': False
-        },
-        '11': { # V1
-            '01': False, # L3
-            '10': False, # L2
-            '11': False,  # L1
-            '00': False
-        },
-    },
-    '0001': {
-        '00': { # V2.5
-            '01': 8000, # L3
-            '10': 8000, # L2
-            '11': 32000 # L1
-        },
-        '10': { # V2
-            '01': 8000, # L3
-            '10': 8000, # L2
-            '11': 32000 # L1
-        },
-        '11': { # V1
-            '01': 32000, # L3
-            '10': 32000, # L2
-            '11': 32000,  # L1
-            '00': False
-        },
-    },
-    '0010': {
-        '00': { # V2.5
-            '01': 16000, # L3
-            '10': 16000, # L2
-            '11': 48000 # L1
-        },
-        '10': { # V2
-            '01': 16000, # L3
-            '10': 16000, # L2
-            '11': 48000 # L1
-        },
-        '11': { # V1
-            '01': 40000, # L3
-            '10': 48000, # L2
-            '11': 64000,  # L1
-            '00': False
-        },
-    },
-    '0011': {
-        '00': { # V2.5
-            '01': 24000, # L3
-            '10': 24000, # L2
-            '11': 56000 # L1
-        },
-        '10': { # V2
-            '01': 24000, # L3
-            '10': 24000, # L2
-            '11': 56000 # L1
-        },
-        '11': { # V1
-            '01': 48000, # L3
-            '10': 56000, # L2
-            '11': 96000,  # L1
-            '00': False
-        },
-    },
-    '0100': {
-        '00': { # V2.5
-            '01': 32000, # L3
-            '10': 32000, # L2
-            '11': 64000 # L1
-        },
-        '10': { # V2
-            '01': 32000, # L3
-            '10': 32000, # L2
-            '11': 64000 # L1
-        },
-        '11': { # V1
-            '01': 56000, # L3
-            '10': 64000, # L2
-            '11': 128000,  # L1
-            '00': False
-        },
-    },
-    '0101': {
-        '00': { # V2.5
-            '01': 40000, # L3
-            '10': 40000, # L2
-            '11': 80000 # L1
-        },
-        '10': { # V2
-            '01': 40000, # L3
-            '10': 40000, # L2
-            '11': 80000 # L1
-        },
-        '11': { # V1
-            '01': 64000, # L3
-            '10': 80000, # L2
-            '11': 160000,  # L1
-            '00': False
-        },
-    },
-    '0110': {
-        '00': { # V2.5
-            '01': 48000, # L3
-            '10': 48000, # L2
-            '11': 96000 # L1
-        },
-        '10': { # V2
-            '01': 48000, # L3
-            '10': 48000, # L2
-            '11': 96000 # L1
-        },
-        '11': { # V1
-            '01': 80000, # L3
-            '10': 96000, # L2
-            '11': 192000,  # L1
-            '00': False
-        },
-    },
-    '0111': {
-        '00': { # V2.5
-            '01': 56000, # L3
-            '10': 56000, # L2
-            '11': 112000 # L1
-        },
-        '10': { # V2
-            '01': 56000, # L3
-            '10': 56000, # L2
-            '11': 112000 # L1
-        },
-        '11': { # V1
-            '01': 96000, # L3
-            '10': 112000, # L2
-            '11': 224000,  # L1
-            '00': False
-        },
-    },
-    '1000': {
-        '00': { # V2.5
-            '01': 64000, # L3
-            '10': 64000, # L2
-            '11': 128000 # L1
-        },
-        '10': { # V2
-            '01': 64000, # L3
-            '10': 64000, # L2
-            '11': 128000 # L1
-        },
-        '11': { # V1
-            '01': 112000, # L3
-            '10': 128000, # L2
-            '11': 256000,  # L1
-            '00': False
-        },
-    },
-    '1001': {
-        '00': { # V2.5
-            '01': 80000, # L3
-            '10': 80000, # L2
-            '11': 144000 # L1
-        },
-        '10': { # V2
-            '01': 80000, # L3
-            '10': 80000, # L2
-            '11': 144000 # L1
-        },
-        '11': { # V1
-            '01': 128000, # L3
-            '10': 160000, # L2
-            '11': 288000,  # L1
-            '00': False
-        },
-    },
-    '1010': {
-        '00': { # V2.5
-            '01': 96000, # L3
-            '10': 96000, # L2
-            '11': 160000 # L1
-        },
-        '10': { # V2
-            '01': 96000, # L3
-            '10': 96000, # L2
-            '11': 160000 # L1
-        },
-        '11': { # V1
-            '01': 160000, # L3
-            '10': 192000, # L2
-            '11': 320000,  # L1
-            '00': False
-        },
-    },
-    '1011': {
-        '00': { # V2.5
-            '01': 112000, # L3
-            '10': 112000, # L2
-            '11': 176000 # L1
-        },
-        '10': { # V2
-            '01': 112000, # L3
-            '10': 112000, # L2
-            '11': 176000 # L1
-        },
-        '11': { # V1
-            '01': 192000, # L3
-            '10': 224000, # L2
-            '11': 352000,  # L1
-            '00': False
-        },
-    },
-    '1100': {
-        '00': { # V2.5
-            '01': 128000, # L3
-            '10': 128000, # L2
-            '11': 192000 # L1
-        },
-        '10': { # V2
-            '01': 128000, # L3
-            '10': 128000, # L2
-            '11': 192000 # L1
-        },
-        '11': { # V1
-            '01': 224000, # L3
-            '10': 256000, # L2
-            '11': 384000,  # L1
-            '00': False
-        },
-    },
-    '1101': {
-        '00': { # V2.5
-            '01': 144000, # L3
-            '10': 144000, # L2
-            '11': 224000 # L1
-        },
-        '10': { # V2
-            '01': 144000, # L3
-            '10': 144000, # L2
-            '11': 224000 # L1
-        },
-        '11': { # V1
-            '01': 256000, # L3
-            '10': 320000, # L2
-            '11': 416000,  # L1
-            '00': False
-        },
-    },
-    '1110': {
-        '00': { # V2.5
-            '01': 160000, # L3
-            '10': 160000, # L2
-            '11': 256000 # L1
-        },
-        '10': { # V2
-            '01': 160000, # L3
-            '10': 160000, # L2
-            '11': 256000 # L1
-        },
-        '11': { # V1
-            '01': 320000, # L3
-            '10': 384000, # L2
-            '11': 448000,  # L1
-            '00': False
-        },
-    },
-    '1111': {
-        '00': { # V2.5
-            '01': False, # L3
-            '10': False, # L2
-            '11': False # L1
-        },
-        '10': { # V2
-            '01': False, # L3
-            '10': False, # L2
-            '11': False # L1
-        },
-        '11': { # V1
-            '01': False, # L3
-            '10': False, # L2
-            '11': False,  # L1
-            '00': False
-        },
-    }
-}
-
-SAMPLE_FREQ = {
-    '00' : {
-        '00': 11025, # L2.5
-        '10': 22050, # L2
-        '11': 44100,  # L1
-    },
-    '01': {
-        '00': 12000, # L2.5
-        '10': 24000, # L2
-        '11': 48000,  # L1
-    },
-    '10': {
-        '00': 8000, # L2.5
-        '10': 16000, # L2
-        '11': 32000,  # L1
-    },
-    '11': {
-        '00': 1, # L2.5
-        '10': 1, # L2
-        '11': 1,  # L1
-    }
-}
-
-PADDING = {
-    '1': 'Padded',
-    '0': 'Unpadded'
-}
-
-PRIVATE = {
-    '1': 'Private',
-    '0': 'Public'
-}
-
-STEREO = {
-    '00': 'Stereo',
-    '01': 'Joint Stereo',
-    '10': 'Dual Channel (Dual Mono)',
-    '11': 'Mono'
-}
-
-COPYRIGHT = {
-    '1': 'Copyrighted',
-    '0': 'Uncopyrighted'
-}
-
-ORIGINAL = {
-    '1': 'Original',
-    '0': 'Copied'
-}
+url = "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3"
 
 def on_new_client(conn, addr):
     global to_add
     conn.send(bytes('HTTP/1.1 200 OK\r\n', 'utf-8')) # HTTP requests expect a 200 OK before any header or data
     conn.send(bytes("Content-Type: audio/mpeg\n\n", 'utf-8')) # Specify its a mp3 stream
     to_add.add(conn)
-
-def mp3_decode(header):
-    header = header[11:34] # 21 Bits Remain
-    mpeg = header[0:2]
-    layer = header[2:4]
-    crc = header[4]
-    bitrate = BITRATE[header[5:9]][mpeg][layer] # Skip CRC bit
-    samplerate = SAMPLE_FREQ[header[9:11]][mpeg]
-    padding = header[12]
-    return LAYER_ID[layer], bitrate, samplerate, padding, crc
-
-def mp3_display(header):
-    header = header[11:34] # 21 Bits Remain
-    mpeg = header[0:2]
-    layer = header[2:4]
-    bitrate = BITRATE[header[5:9]][mpeg][layer] # Skip CRC bit
-    samplerate = SAMPLE_FREQ[header[9:11]][mpeg]
-    private = PRIVATE[header[13]]
-    stereo = STEREO[header[13:15]]
-    copyrighted = COPYRIGHT[header[17]]
-    original = ORIGINAL[header[18]]
-
-    print('\nMP3 STREAM DETECTED\n')
-    print(f'{MPEG_ID[mpeg]} | {LAYER_ID[layer]}')
-    print(f'{bitrate/1000}kbps | {samplerate}Hz')
-    print(f'{private} | {original} | {copyrighted}')
-    print(f'{stereo}\n')
-
-def mp3_next_header(layer, padding, bitrate, samplerate, crc):
-    # Layer I 32 bits ; Layer II & III 8 bits
-    # For Layer I files us this formula:
-    # FrameLengthInBytes = (12 * BitRate / SampleRate + Padding) * 4
-    # For Layer II & III files use this formula:
-    # FrameLengthInBytes = 144 * BitRate / SampleRate + Padding
-
-    if(layer == 'Layer I'):
-        padding_add = 0
-        crc_add = 0
-        if padding == '1':
-            padding_add = 4
-
-        if crc == '0':
-            crc_add = 2
-        
-        return math.floor((12 * (bitrate/samplerate) + padding_add) * 4) + crc_add
-    elif (layer == 'Layer II') or (layer == 'Layer III'):
-        padding_add = 0
-        crc_add = 0
-        if padding == '1':
-            padding_add = 1
-
-        if crc == '0':
-            crc_add = 2
-        
-        return math.floor(144 * (bitrate/samplerate) + padding_add) + crc_add
 
 def reconnect():
     global extconn
@@ -462,17 +45,18 @@ def reconnect():
             time.sleep(5)
 
     logging.info("Waiting for MP3 Sync")
+    packet = mp3packet.MP3Packet()
     while(syncs < 20):
         buffer = extconn.read(4) # Read the mp3 header
         header = "{:08b}".format(int(buffer[0:4].hex(), 16))
         if(header[0:11] == '11111111111'):
-            layer, bitrate, samplerate, padding, crc = mp3_decode(header) # were going to forge our own packets
-            next = mp3_next_header(layer, padding, bitrate, samplerate, crc)
+            packet.decode_from_hex(buffer)
+            next = packet.next_header()
             mp3_head = buffer
             syncs += 1
         extconn.read(next-4) # This will mess up any invalid headers
 
-    mp3_display("{:08b}".format(int(mp3_head.hex(), 16)))
+    print(packet)
 
 def bufferio():
     """
@@ -492,9 +76,6 @@ def bufferio():
     while(True):
         try:
             buffer = extconn.read(next) # Recieve 30 mp3 packets
-            header = "{:08b}".format(int(buffer.hex(), 16))
-            layer, bitrate, samplerate, padding, crc = mp3_decode(header) # were going to forge our own packets
-            next = mp3_next_header(layer, padding, bitrate, samplerate, crc)
             if(buffer == b""):
                 logging.warn('Detecting empty data stream... Reconnecting')
                 reconnect()
