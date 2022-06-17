@@ -21,7 +21,7 @@ class MP3Packet:
         {self.private} | {self.copyrighted} | {self.original} | {self.stereo}
 
         Extras:
-        CRC: {self.crc} | Padding: {self.padding} | Next Header {self.next_header()}
+        CRC: {self.crc} | Padding: {self.padding} | Next Header in {self.next_header()} Bytes
         '''
 
     def decode_from_hex(self, hexa):
@@ -66,4 +66,4 @@ class MP3Packet:
                 padding_add = 1
             
             return math.floor(144 * (self.bitrate/self.samplerate) + padding_add) + crc_add
-        return 0
+        return 8

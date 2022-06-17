@@ -46,16 +46,22 @@ def reconnect():
 
     logging.info("Waiting for MP3 Sync")
     packet = mp3packet.MP3Packet()
-    while(syncs < 20):
+    while(syncs < 5):
         buffer = extconn.read(4) # Read the mp3 header
         header = "{:08b}".format(int(buffer[0:4].hex(), 16))
         if(header[0:11] == '11111111111'):
             packet.decode_from_hex(buffer)
             next = packet.next_header()
-            mp3_head = buffer
-            syncs += 1
-        extconn.read(next-4) # This will mess up any invalid headers
-
+            time.sleep(0.05) # Buffer depletion prevention
+            extconn.read(next-4)
+            buffer = extconn.read(4)
+            header = "{:08b}".format(int(buffer[0:4].hex(), 16))
+            if(header[0:11] == '11111111111'):
+                packet.decode_from_hex(buffer)
+                next = packet.next_header()
+                syncs += 1
+                mp3_head = buffer
+                extconn.read(next-4)
     print(packet)
 
 def bufferio():
@@ -87,7 +93,7 @@ def bufferio():
 
         if len(to_add) != 0:
             for c in to_add:
-                clients.add(conn)
+                clients.add(c)
             to_add = set()
 
         for c in clients: # broadcast to all clients
@@ -103,13 +109,38 @@ def bufferio():
                 clients.remove(c)
             to_remove = set()
 
-threading.Thread(target=bufferio).start()
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-    addr, port = '0.0.0.0', 5222
-    server_socket.bind((addr, port)) # Listen on localhost on port 5222
-    server_socket.listen(50)
-    print(f'listening to {addr} on port {port}')
-    while True:
-        conn, address = server_socket.accept()
-        print("Connection from " + address[0] + ":" + str(address[1]))
-        threading.Thread(target=on_new_client, kwargs={'conn': conn, 'addr': address}).start()
+def relay_start():
+    iothread = threading.Thread(target=bufferio)
+    iothread.daemon = True
+    iothread.start()
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+        addr, port = '0.0.0.0', 5222
+        server_socket.bind((addr, port)) # Listen on localhost on port 5222
+        server_socket.listen(5)
+        server_socket.settimeout(0.5)
+        print(f'listening to {addr} on port {port}')
+        while True:
+            try:
+                conn, address = server_socket.accept()
+                print("Connection from " + address[0] + ":" + str(address[1]))
+                thread = threading.Thread(target=on_new_client, kwargs={'conn': conn, 'addr': address})
+                thread.daemon = True
+                thread.start()
+            except socket.timeout:
+                pass
+
+def relay_exit():
+    global clients
+    print('Relay Shutdown')
+    _tmp = clients # Prevents threads from calling None.send()
+    clients = set()
+    for c in _tmp:
+        c.shutdown(socket.SHUT_RDWR)
+        c.close()
+        quit()
+
+if __name__ == '__main__':
+    try:
+        relay_start()
+    except (KeyboardInterrupt, SystemExit):
+        relay_exit()
