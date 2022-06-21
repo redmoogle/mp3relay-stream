@@ -16,7 +16,6 @@ clients = set()
 to_add = set()
 buffer = None
 extconn = None
-mp3_head = None
 next = 0
 
 url = "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3"
@@ -29,7 +28,6 @@ def on_new_client(conn, addr):
 
 def reconnect():
     global extconn
-    global mp3_head
     global next
     if(extconn):
         extconn.close()
@@ -48,19 +46,16 @@ def reconnect():
     packet = mp3packet.MP3Packet()
     while(syncs < 5):
         buffer = extconn.read(4) # Read the mp3 header
-        header = "{:08b}".format(int(buffer[0:4].hex(), 16))
-        if(header[0:11] == '11111111111'):
+        if packet.IsHeader(buffer):
             packet.decode_from_hex(buffer)
             next = packet.next_header()
             time.sleep(0.05) # Buffer depletion prevention
             extconn.read(next-4)
             buffer = extconn.read(4)
-            header = "{:08b}".format(int(buffer[0:4].hex(), 16))
-            if(header[0:11] == '11111111111'):
+            if packet.IsHeader(buffer):
                 packet.decode_from_hex(buffer)
                 next = packet.next_header()
                 syncs += 1
-                mp3_head = buffer
                 extconn.read(next-4)
     print(packet)
 
@@ -83,7 +78,7 @@ def bufferio():
         try:
             buffer = extconn.read(next) # Recieve 30 mp3 packets
             if(buffer == b""):
-                logging.warn('Detecting empty data stream... Reconnecting')
+                logging.warning('Detecting empty data stream... Reconnecting')
                 reconnect()
                 continue
         except (HTTPError, ConnectionError, URLError) as err:
@@ -107,6 +102,7 @@ def bufferio():
         if len(to_remove) != 0:
             for c in to_remove:
                 clients.remove(c)
+                logging.info('Disconnection from: ' + c)
             to_remove = set()
 
 def relay_start():
@@ -114,7 +110,7 @@ def relay_start():
     iothread.daemon = True
     iothread.start()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-        addr, port = '0.0.0.0', 5222
+        addr, port = '127.0.0.1', 5222
         server_socket.bind((addr, port)) # Listen on localhost on port 5222
         server_socket.listen(5)
         server_socket.settimeout(0.5)
@@ -122,7 +118,7 @@ def relay_start():
         while True:
             try:
                 conn, address = server_socket.accept()
-                print("Connection from " + address[0] + ":" + str(address[1]))
+                logging.info("Connection from " + address[0] + ":" + str(address[1]))
                 thread = threading.Thread(target=on_new_client, kwargs={'conn': conn, 'addr': address})
                 thread.daemon = True
                 thread.start()

@@ -23,6 +23,12 @@ class MP3Packet:
         Extras:
         CRC: {self.crc} | Padding: {self.padding} | Next Header in {self.next_header()} Bytes
         '''
+    
+    def _hex2bin(self, hexa):
+        return "{:011b}".format(int(hexa.hex(), 16))
+
+    def IsHeader(self, hexa):
+        return self._hex2bin(hexa)[0:11] == '11111111111'
 
     def decode_from_hex(self, hexa):
         """
