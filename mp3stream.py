@@ -45,7 +45,7 @@ def reconnect():
             logging.error(err)
             extconn = None
             if(head):
-                handle_clients(packet.header()+("b\00"*(next-4))) # Send some fake data
+                handle_clients(packet.header()+(b"\00"*(next-4))) # Send some fake data
 
     logging.info("Waiting for MP3 Sync")
     packet = mp3packet.MP3Packet()
@@ -62,7 +62,7 @@ def reconnect():
                 next = packet.next_header()
                 syncs += 1
                 extconn.read(next-4)
-                handle_clients(packet.header()+("b\00"*(next-4))) # Send some fake data
+                handle_clients(packet.header()+(b"\00"*(next-4))) # Send some fake data
     print(packet)
 
 def handle_clients(data):
