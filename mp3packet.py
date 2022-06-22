@@ -14,6 +14,8 @@ class MP3Packet:
         self.copyrighted = None
         self.original = None
 
+        self.raw_header = None
+
     def __repr__(self):
         return f'''
         MPEG Version: v{self.mpeg} | Layer: {self.layer}
@@ -34,7 +36,7 @@ class MP3Packet:
         """
         Takes a hexadecimal input and converts it to mp3 data
         """
-        #int(hexa.hex(), 16)
+        self.raw_header = hexa
         binary = "{:08b}".format(int(hexa.hex(), 16))[11:32]
         self.mpeg = enums.MPEG_ID[binary[0:2]]
         self.layer = enums.LAYER_ID[binary[2:4]]
@@ -47,6 +49,9 @@ class MP3Packet:
         self.copyrighted = enums.COPYRIGHT[binary[17]]
         self.original = enums.ORIGINAL[binary[18]]
         return True
+
+    def header(self):
+        return self.raw_header
 
     def next_header(self):
         """

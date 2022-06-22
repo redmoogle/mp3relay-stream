@@ -14,8 +14,10 @@ logging.basicConfig(
 
 clients = set()
 to_add = set()
+to_remove = set()
 buffer = None
 extconn = None
+head = None
 next = 0
 
 url = "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3"
@@ -29,6 +31,8 @@ def on_new_client(conn, addr):
 def reconnect():
     global extconn
     global next
+    global head
+
     if(extconn):
         extconn.close()
         extconn = None
@@ -36,11 +40,12 @@ def reconnect():
 
     while extconn == None:
         try:
-            extconn = urlreq.urlopen(url, timeout=60)
+            extconn = urlreq.urlopen(url, timeout=5)
         except (HTTPError, URLError, ConnectionError) as err:
             logging.error(err)
             extconn = None
-            time.sleep(5)
+            if(head):
+                handle_clients(packet.header()+("b\00"*(next-4))) # Send some fake data
 
     logging.info("Waiting for MP3 Sync")
     packet = mp3packet.MP3Packet()
@@ -57,26 +62,45 @@ def reconnect():
                 next = packet.next_header()
                 syncs += 1
                 extconn.read(next-4)
+                handle_clients(packet.header()+("b\00"*(next-4))) # Send some fake data
     print(packet)
+
+def handle_clients(data):
+    global clients
+    global to_add
+    global to_remove
+
+    if len(to_add) != 0:
+        for c in to_add:
+            clients.add(c)
+        to_add = set()
+
+    for c in clients: # broadcast to all clients
+        try:
+            c.send(data)
+        except (ConnectionAbortedError, BrokenPipeError): # Client disconnected
+            to_remove.add(c)
+
+    if len(to_remove) != 0:
+        for c in to_remove:
+            clients.remove(c)
+            logging.info('Disconnection')
+        to_remove = set()
+
 
 def bufferio():
     """
     Grabs the data from the url in extconn and broadcast it to all listening clients
     """
-    to_remove = set()
-
     global buffer
-    global clients
     global extconn
-    global to_add
-    global next
 
     reconnect()
 
     logging.info("Beginning MP3 Relay Playback")
     while(True):
         try:
-            buffer = extconn.read(next) # Recieve 30 mp3 packets
+            buffer = extconn.read(next) # Recieve a mp3 packet
             if(buffer == b""):
                 logging.warning('Detecting empty data stream... Reconnecting')
                 reconnect()
@@ -86,24 +110,7 @@ def bufferio():
             reconnect()
             continue
 
-        if len(to_add) != 0:
-            for c in to_add:
-                clients.add(c)
-            to_add = set()
-
-        for c in clients: # broadcast to all clients
-            try:
-                c.send(buffer)
-            except ConnectionAbortedError: # Client disconnected
-                to_remove.add(c)
-            except BrokenPipeError:
-                to_remove.add(c)
-
-        if len(to_remove) != 0:
-            for c in to_remove:
-                clients.remove(c)
-                logging.info('Disconnection from: ' + c)
-            to_remove = set()
+        handle_clients(buffer)
 
 def relay_start():
     iothread = threading.Thread(target=bufferio)
