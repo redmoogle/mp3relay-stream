@@ -3,9 +3,9 @@ import urllib.request as urlreq
 import socket
 import threading
 import time
-import math
 import logging
 import mp3packet
+import ffmpeg
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -58,6 +58,21 @@ def reconnect():
                 syncs += 1
                 extconn.read(next-4)
     print(packet)
+
+    # Startup FFMPEG server
+    #-codec:a opus #-b:a 48k
+    fmpg = (
+        ffmpeg
+        .input('http://127.0.0.1:5222')
+        .output(
+            'http://127.0.0.1:5225',
+            codec = "opus",
+            listen = 1,
+            b = 48000
+        )
+        .global_args('-re')
+        .run(capture_stdout=True)
+    )
 
 def bufferio():
     """
