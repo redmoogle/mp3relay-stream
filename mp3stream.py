@@ -42,6 +42,7 @@ def reconnect():
         try:
             extconn = urlreq.urlopen(url, timeout=5)
         except (HTTPError, URLError, ConnectionError) as err:
+            time.sleep(3)
             logging.error(err)
             extconn = None
             if(head):
@@ -62,7 +63,6 @@ def reconnect():
                 next = packet.next_header()
                 syncs += 1
                 extconn.read(next-4)
-                handle_clients(packet.header()+(b"\00"*(next-4))) # Send some fake data
     print(packet)
 
 def handle_clients(data):
