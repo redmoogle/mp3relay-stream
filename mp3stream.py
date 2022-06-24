@@ -41,7 +41,7 @@ def reconnect():
     while extconn == None:
         try:
             extconn = urlreq.urlopen(url, timeout=10)
-        except (HTTPError, URLError, ConnectionError, TimeoutError) as err:
+        except (HTTPError, URLError, ConnectionError, socket.timeout, TimeoutError) as err:
             logging.error(err)
             time.sleep(3)
             extconn = None
@@ -105,7 +105,7 @@ def bufferio():
                 logging.warning('Detecting empty data stream... Reconnecting')
                 reconnect()
                 continue
-        except (HTTPError, ConnectionError, URLError, TimeoutError) as err:
+        except (HTTPError, ConnectionError, URLError, socket.timeout, TimeoutError) as err:
             logging.error(err)
             reconnect()
             continue
