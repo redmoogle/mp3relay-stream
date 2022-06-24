@@ -43,7 +43,7 @@ def reconnect():
 
     while extconn == None:
         try:
-            extconn = urlreq.urlopen(url, timeout=10)
+            extconn = urlreq.urlopen(url, timeout=5)
         except (HTTPError, URLError, ConnectionError, TimeoutError) as err:
             logging.error(err)
             time.sleep(3)
@@ -66,6 +66,8 @@ def reconnect():
                 next = packet.next_header()
                 syncs += 1
                 extconn.read(next-4)
+                if(head):
+                    handle_clients(packet.header()+(b"\00"*(next-4))) # Send some fake data
     print(packet)
 
 def handle_clients(data):
@@ -115,7 +117,7 @@ def bufferio():
 
         with open("stream.mp3", "wb+") as filebuffer:
             filebuffer.write(buffer)
-        subprocess.call(cmd, shell=True)
+        subprocess.Popen([cmd], shell=True).wait()
         with open("processed.opus", "rb") as filebuffer:
             handle_clients(filebuffer.read())
 
