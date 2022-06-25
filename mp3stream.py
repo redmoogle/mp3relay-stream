@@ -23,7 +23,7 @@ next = 0
 url = "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3"
 
 # MP3 Chunks to OPUS Chunks
-cmd = "ffmpeg -i stream.mp3 -b:a 48k processed.opus"
+cmd = "ffmpeg -i stream.mp3 -b:a 48k http://0.0.0.0:5223\?listen"
 
 def on_new_client(conn, addr):
     global to_add
@@ -115,16 +115,22 @@ def bufferio():
             reconnect()
             continue
 
-        with open("stream.mp3", "wb+") as filebuffer:
-            filebuffer.write(buffer)
+        #with open("stream.mp3", "wb+") as filebuffer:
+        #    filebuffer.write(buffer)
+        #with open("processed.opus", "rb") as filebuffer:
+        handle_clients(buffer)
+
+def ffstart():
+    while(True):
         subprocess.Popen([cmd], shell=True).wait()
-        with open("processed.opus", "rb") as filebuffer:
-            handle_clients(filebuffer.read())
 
 def relay_start():
     iothread = threading.Thread(target=bufferio)
     iothread.daemon = True
     iothread.start()
+    ffthread = threading.Thread(target=ffstart)
+    ffthread.daemon = True
+    ffthread.start()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         addr, port = '127.0.0.1', 5222
         server_socket.bind((addr, port)) # Listen on localhost on port 5222
@@ -140,6 +146,8 @@ def relay_start():
                 thread.start()
             except socket.timeout:
                 pass
+
+#subprocess.Popen([cmd], shell=True).wait()
 
 def relay_exit():
     global clients
