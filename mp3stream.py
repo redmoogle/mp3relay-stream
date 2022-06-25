@@ -26,6 +26,7 @@ def on_new_client(conn, addr):
     global to_add
     conn.send(bytes('HTTP/1.1 200 OK\r\n', 'utf-8')) # HTTP requests expect a 200 OK before any header or data
     conn.send(bytes("Content-Type: audio/mpeg\n\n", 'utf-8')) # Specify its a mp3 stream
+    conn.send(buffer)
     to_add.add(conn)
 
 def reconnect():
@@ -63,6 +64,8 @@ def reconnect():
                 next = packet.next_header()
                 syncs += 1
                 extconn.read(next-4)
+                if(head):
+                    handle_clients(packet.header()+(b"\00"*(next-4))) # Send some fake data
     print(packet)
 
 def handle_clients(data):
@@ -100,7 +103,7 @@ def bufferio():
     logging.info("Beginning MP3 Relay Playback")
     while(True):
         try:
-            buffer = extconn.read(next) # Recieve a mp3 packet
+            buffer = extconn.read(next*10) # Recieve 10 mp3 packets about 0.26s of audio
             if(buffer == b""):
                 logging.warning('Detecting empty data stream... Reconnecting')
                 reconnect()
