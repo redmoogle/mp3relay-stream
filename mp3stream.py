@@ -15,7 +15,6 @@ logging.basicConfig(
 clients = set()
 to_add = set()
 to_remove = set()
-buffer = None
 extconn = None
 head = None
 next = 0
@@ -26,7 +25,6 @@ def on_new_client(conn, addr):
     global to_add
     conn.send(bytes('HTTP/1.1 200 OK\r\n', 'utf-8')) # HTTP requests expect a 200 OK before any header or data
     conn.send(bytes("Content-Type: audio/mpeg\n\n", 'utf-8')) # Specify its a mp3 stream
-    conn.send(buffer)
     to_add.add(conn)
 
 def reconnect():
@@ -95,7 +93,6 @@ def bufferio():
     """
     Grabs the data from the url in extconn and broadcast it to all listening clients
     """
-    global buffer
     global extconn
 
     reconnect()
