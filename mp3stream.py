@@ -104,7 +104,7 @@ def bufferio():
     while(True):
         try:
             buffer = extconn.read(next*10) # Recieve 10 mp3 packets about 0.26s of audio
-            if(buffer == b""):
+            if(buffer == b"" or buffer == None):
                 logging.warning('Detecting empty data stream... Reconnecting')
                 reconnect()
                 continue
