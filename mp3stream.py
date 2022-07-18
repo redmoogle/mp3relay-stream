@@ -16,7 +16,6 @@ clients = set()
 to_add = set()
 to_remove = set()
 extconn = None
-head = None
 next = 0
 
 url = "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3"
@@ -30,7 +29,6 @@ def on_new_client(conn, addr):
 def reconnect():
     global extconn
     global next
-    global head
 
     if(extconn):
         extconn.close()
@@ -44,8 +42,7 @@ def reconnect():
             logging.error(err)
             time.sleep(3)
             extconn = None
-            if(head):
-                handle_clients(packet.header()+(b"\00"*(next-4))) # Send some fake data
+            handle_clients(packet.header()+(b"\00"*(next-4))) # Send some fake data
 
     logging.info("Waiting for MP3 Sync")
     packet = mp3packet.MP3Packet()
@@ -62,8 +59,7 @@ def reconnect():
                 next = packet.next_header()
                 syncs += 1
                 extconn.read(next-4)
-                if(head):
-                    handle_clients(packet.header()+(b"\00"*(next-4))) # Send some fake data
+
     print(packet)
 
 def handle_clients(data):
