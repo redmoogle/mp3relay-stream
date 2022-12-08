@@ -3,16 +3,16 @@ import math
 
 class MP3Packet:
     def __init__(self):
-        self.mpeg = None
-        self.layer = None
-        self.crc = None
-        self.bitrate = None
-        self.samplerate = None
-        self.padding = None
-        self.private = None
-        self.stereo = None
-        self.copyrighted = None
-        self.original = None
+        self.mpeg: float = None
+        self.layer: int = None
+        self.crc: bool = None
+        self.bitrate: float = None
+        self.samplerate: int = None
+        self.padding: bool = None
+        self.private: str = None
+        self.stereo: str = None
+        self.copyrighted: str = None
+        self.original: str = None
 
         self.raw_header = None
 
@@ -26,8 +26,8 @@ class MP3Packet:
         CRC: {self.crc} | Padding: {self.padding} | Next Header in {self.next_header()} Bytes
         '''
     
-    def _hex2bin(self, hexa):
-        return "{:011b}".format(int(hexa.hex(), 16))
+    def _hex2bin(self, hexstr):
+        return "{:011b}".format(int(hexstr.hex(), 16))
 
     def IsHeader(self, hexa):
         return self._hex2bin(hexa)[0:11] == '11111111111'

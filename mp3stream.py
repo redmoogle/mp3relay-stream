@@ -16,7 +16,8 @@ clients = set()
 to_add = set()
 to_remove = set()
 extconn = None
-next = 0
+packet = None
+nextpacket = 0
 
 url = "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3"
 
@@ -28,7 +29,8 @@ def on_new_client(conn, addr):
 
 def reconnect():
     global extconn
-    global next
+    global nextpacket
+    global packet
 
     if(extconn):
         extconn.close()
@@ -42,7 +44,6 @@ def reconnect():
             logging.error(err)
             time.sleep(3)
             extconn = None
-            handle_clients(packet.header()+(b"\00"*(next-4))) # Send some fake data
 
     logging.info("Waiting for MP3 Sync")
     packet = mp3packet.MP3Packet()
@@ -50,15 +51,15 @@ def reconnect():
         buffer = extconn.read(4) # Read the mp3 header
         if packet.IsHeader(buffer):
             packet.decode_from_hex(buffer)
-            next = packet.next_header()
+            nextpacket = packet.next_header()
             time.sleep(0.05) # Buffer depletion prevention
-            extconn.read(next-4)
+            extconn.read(nextpacket-4)
             buffer = extconn.read(4)
             if packet.IsHeader(buffer):
                 packet.decode_from_hex(buffer)
-                next = packet.next_header()
+                nextpacket = packet.next_header()
                 syncs += 1
-                extconn.read(next-4)
+                extconn.read(nextpacket-4)
 
     print(packet)
 
@@ -66,6 +67,9 @@ def handle_clients(data):
     global clients
     global to_add
     global to_remove
+
+    if(extconn == None and packet is not None):
+        data = packet.header()+(b"\00"*(nextpacket-4))
 
     if len(to_add) != 0:
         for c in to_add:
@@ -96,7 +100,7 @@ def bufferio():
     logging.info("Beginning MP3 Relay Playback")
     while(True):
         try:
-            buffer = extconn.read(next*10) # Recieve 10 mp3 packets about 0.26s of audio
+            buffer = extconn.read(nextpacket*10) # Recieve 10 mp3 packets about 0.26s of audio
             if(buffer == b"" or buffer == None):
                 logging.warning('Detecting empty data stream... Reconnecting')
                 reconnect()
