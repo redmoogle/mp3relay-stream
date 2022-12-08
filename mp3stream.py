@@ -39,7 +39,7 @@ def reconnect():
 
     while extconn == None:
         try:
-            extconn = urlreq.urlopen(url, timeout=10)
+            extconn = urlreq.urlopen(url, timeout=5)
         except (HTTPError, URLError, ConnectionError, socket.timeout, TimeoutError) as err:
             logging.error(err)
             time.sleep(3)
