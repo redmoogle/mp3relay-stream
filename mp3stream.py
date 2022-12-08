@@ -44,6 +44,7 @@ def reconnect():
             logging.error(err)
             time.sleep(3)
             extconn = None
+            handle_clients(None)
 
     logging.info("Waiting for MP3 Sync")
     packet = mp3packet.MP3Packet()
