@@ -1,150 +1,59 @@
-from urllib.error import HTTPError, URLError
-import urllib.request as urlreq
-import socket
-import threading
-import time
-import math
 import logging
-import mp3packet
-
-logging.basicConfig(
-    format='%(asctime)s %(levelname)-8s %(message)s',
-    level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S')
-
-clients = set()
-to_add = set()
-to_remove = set()
-extconn = None
-packet = None
-nextpacket = 0
-
-url = "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3"
-
-def on_new_client(conn, addr):
-    global to_add
-    conn.send(bytes('HTTP/1.1 200 OK\r\n', 'utf-8')) # HTTP requests expect a 200 OK before any header or data
-    conn.send(bytes("Content-Type: audio/mpeg\n\n", 'utf-8')) # Specify its a mp3 stream
-    to_add.add(conn)
-
-def reconnect():
-    global extconn
-    global nextpacket
-    global packet
-
-    if(extconn):
-        extconn.close()
-        extconn = None
-    syncs = 0 # Make sure we have the right header
-
-    while extconn == None:
-        try:
-            extconn = urlreq.urlopen(url, timeout=5)
-        except (HTTPError, URLError, ConnectionError, socket.timeout, TimeoutError) as err:
-            logging.error(err)
-            time.sleep(3)
-            extconn = None
-            handle_clients(None)
-
-    logging.info("Waiting for MP3 Sync")
-    packet = mp3packet.MP3Packet()
-    while(syncs < 5):
-        buffer = extconn.read(4) # Read the mp3 header
-        if packet.IsHeader(buffer):
-            packet.decode_from_hex(buffer)
-            nextpacket = packet.next_header()
-            time.sleep(0.05) # Buffer depletion prevention
-            extconn.read(nextpacket-4)
-            buffer = extconn.read(4)
-            if packet.IsHeader(buffer):
-                packet.decode_from_hex(buffer)
-                nextpacket = packet.next_header()
-                syncs += 1
-                extconn.read(nextpacket-4)
-
-    print(packet)
-
-def handle_clients(data):
-    global clients
-    global to_add
-    global to_remove
-
-    if(extconn == None and packet is not None):
-        data = packet.header()+(b"\00"*(nextpacket-4))
-
-    if len(to_add) != 0:
-        for c in to_add:
-            clients.add(c)
-        to_add = set()
-
-    for c in clients: # broadcast to all clients
-        try:
-            c.send(data)
-        except (ConnectionAbortedError, BrokenPipeError): # Client disconnected
-            to_remove.add(c)
-
-    if len(to_remove) != 0:
-        for c in to_remove:
-            clients.remove(c)
-            logging.info('Disconnection')
-        to_remove = set()
-
-
-def bufferio():
-    """
-    Grabs the data from the url in extconn and broadcast it to all listening clients
-    """
-    global extconn
-
-    reconnect()
-
-    logging.info("Beginning MP3 Relay Playback")
-    while(True):
-        try:
-            buffer = extconn.read(nextpacket*10) # Recieve 10 mp3 packets about 0.26s of audio
-            if(buffer == b"" or buffer == None):
-                logging.warning('Detecting empty data stream... Reconnecting')
-                reconnect()
-                continue
-        except (HTTPError, ConnectionError, URLError, socket.timeout, TimeoutError) as err:
-            logging.error(err)
-            reconnect()
-            continue
-
-        handle_clients(buffer)
-
-def relay_start():
-    iothread = threading.Thread(target=bufferio)
-    iothread.daemon = True
-    iothread.start()
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-        addr, port = '127.0.0.1', 5222
-        server_socket.bind((addr, port)) # Listen on localhost on port 5222
-        server_socket.listen(5)
-        server_socket.settimeout(0.5)
-        print(f'listening to {addr} on port {port}')
-        while True:
-            try:
-                conn, address = server_socket.accept()
-                logging.info("Connection from " + address[0] + ":" + str(address[1]))
-                thread = threading.Thread(target=on_new_client, kwargs={'conn': conn, 'addr': address})
-                thread.daemon = True
-                thread.start()
-            except socket.timeout:
-                pass
-
-def relay_exit():
-    global clients
-    print('Relay Shutdown')
-    _tmp = clients # Prevents threads from calling None.send()
-    clients = set()
-    for c in _tmp:
-        c.shutdown(socket.SHUT_RDWR)
-        c.close()
-        quit()
+from mp3relay import MP3Relay
+import json
 
 if __name__ == '__main__':
+    relays = []
+
+    def start_relays():
+        for relay in relays:
+            relay.start_relay()
+
+    def stop_relays():
+        for relay in relays:
+            relay.stop_relay()
+
+    with open('config.json', 'r') as configjson:
+        config = json.load(configjson)
+    bind_address = config["bind_addr"]
+
+    for relayconfig in config["relays"]:
+        relay: MP3Relay = MP3Relay()
+        relay.stream = relayconfig["ip"]
+        relay.port = relayconfig["port"]
+        relay.bind_address = bind_address
+        if("name" in relayconfig):
+            relay.name = relayconfig["name"]
+        relays.append(relay)
     try:
-        relay_start()
+        print("Type `HELP` for a list of commands")
+        while(True):
+            inputstr = input().lower().strip()
+            if(inputstr == "help"):
+                print("""    | 1: Start Relays
+    | 2: Stop Relays
+    | 3: Display Relays
+    | 4: Reload Relays""")
+            if(inputstr == "1"):
+                if(len(relays) == 1):
+                    print(f"Started 1 relay")
+                else:
+                    print(f"Started {len(relays)} relays")
+                start_relays()
+            if(inputstr == "2"):
+                if(len(relays) == 1):
+                    print(f"Stopped 1 relay")
+                else:
+                    print(f"Stopped {len(relays)} relays")
+                stop_relays()
+            if(inputstr == "3"):
+                print("Listing Relays")
+                for relay in relays:
+                    print(f"\t{relay}")
+                    if(relay.packet):
+                        print(f"{relay.packet}")
+                    else:
+                        print(f"\n\tDisconnected")
     except (KeyboardInterrupt, SystemExit):
-        relay_exit()
+        stop_relays()
+

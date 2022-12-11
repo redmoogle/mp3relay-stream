@@ -17,15 +17,14 @@ class MP3Packet:
         self.raw_header = None
 
     def __repr__(self):
-        return f'''
-        MPEG Version: v{self.mpeg} | Layer: {self.layer}
+        return f'''        MPEG Version: v{self.mpeg} | Layer: {self.layer}
         Bitrate: {self.bitrate/1000}kbps | Sample Rate: {self.samplerate}Hz
         {self.private} | {self.copyrighted} | {self.original} | {self.stereo}
 
         Extras:
         CRC: {self.crc} | Padding: {self.padding} | Next Header in {self.next_header()} Bytes
         '''
-    
+
     def _hex2bin(self, hexstr):
         return "{:011b}".format(int(hexstr.hex(), 16))
 
@@ -70,11 +69,17 @@ class MP3Packet:
         if(self.layer == 1):
             if self.padding == True:
                 padding_add = 4
-            
+
             return math.floor((12 * (self.bitrate/self.samplerate) + padding_add) * 4) + crc_add
         elif (self.layer == 2) or (self.layer == 3):
             if self.padding == True:
                 padding_add = 1
-            
+
             return math.floor(144 * (self.bitrate/self.samplerate) + padding_add) + crc_add
         return 8
+
+    def duration(self):
+        """
+        Duration of this frame
+        """
+        return self.next_header()/self.bitrate

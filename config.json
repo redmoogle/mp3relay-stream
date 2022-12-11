@@ -1,0 +1,10 @@
+{
+    "bind_addr": "127.0.0.1",
+    "relays": [
+        {
+            "name": "Hit Radio",
+            "ip": "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3",
+            "port": 5222
+        }
+    ]
+}
