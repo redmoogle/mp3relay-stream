@@ -85,4 +85,4 @@ class MP3Packet:
         return self.next_header()/self.bitrate
     
     def getEmpty(self):
-        return self.raw_header + ("\x00" * (self.next_header() - 4))
+        return self.raw_header + (b"\x00" * (self.next_header() - 4))
