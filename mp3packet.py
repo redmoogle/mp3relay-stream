@@ -83,3 +83,6 @@ class MP3Packet:
         Duration of this frame
         """
         return self.next_header()/self.bitrate
+    
+    def getEmpty(self):
+        return self.raw_header + ("\x00" * (self.next_header() - 4))

@@ -51,10 +51,7 @@ class MP3Relay:
 
     async def handle_clients(self, buffer):
         self.clients += self.adding
-        self.adding = []
-
-        if(self.remote_socket == None and self.packet is not None):
-            buffer = (self.packet.header()+(b"\00"*(self.packet-4))) * 10 # We send 10 packets of blank data if there is no connection
+        self.adding.clear()
 
         for client in self.clients:
             try:
@@ -65,7 +62,7 @@ class MP3Relay:
 
         for client in self.removing:
             self.clients.remove(client)
-        self.removing = []
+        self.removing.clear()
 
     async def bufferinput(self):
         """
@@ -98,7 +95,10 @@ class MP3Relay:
                 self.remote_socket = urlreq.urlopen(self.stream, timeout=5)
             except (HTTPError, URLError, ConnectionError, socket.timeout, TimeoutError) as err:
                 self.remote_socket = None
-                self.handle_clients(None)
+                if(self.packet):
+                    self.handle_clients(self.packet.getEmpty() * 10)
+                else:
+                    self.handle_clients(None)
 
         self.packet = mp3packet.MP3Packet()
         syncs = 0
