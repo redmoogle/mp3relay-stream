@@ -90,15 +90,16 @@ class MP3Relay:
         """
         if(self.remote_socket is not None):
             self.remote_socket.close()
+            self.remote_socket = None
         while self.remote_socket is None:
             try:
                 self.remote_socket = urlreq.urlopen(self.stream, timeout=5)
             except (HTTPError, URLError, ConnectionError, socket.timeout, TimeoutError) as err:
                 self.remote_socket = None
                 if(self.packet):
-                    self.handle_clients(self.packet.getEmpty() * 10)
+                    await self.handle_clients(self.packet.getEmpty() * 100)
                 else:
-                    self.handle_clients(None)
+                    await self.handle_clients(None)
 
         self.packet = mp3packet.MP3Packet()
         syncs = 0
