@@ -59,6 +59,9 @@ class MP3Relay:
             except (HTTPError, URLError, ConnectionError, socket.timeout, TimeoutError) as err: # TODO remove this horrifyingly bad code
                 self.removing.append(client)
                 self.relay_report("A Client Disconnected")
+            except BlockingIOError:
+                continue # Client doesnt want more data so wait
+                         # (though this will lead to glitchy audio but this will stop the relay from crashing)
 
         for client in self.removing:
             self.clients.remove(client)
@@ -72,6 +75,9 @@ class MP3Relay:
         while(True):
             try:
                 await asyncio.sleep(self.packet.duration()*9) # Give time for other things
+                if(self.remote_socket == None):
+                    self.relay_report("Detected a broken socket; Reconnecting to the stream")
+                    await self.connect()
                 buffer = self.remote_socket.read(self.packetsize*10) # Recieve 10 mp3 packets about 0.26s of audio
                 if(buffer == b""):
                     self.relay_report("Detected an empty buffer; Reconnecting to the stream")
@@ -97,7 +103,8 @@ class MP3Relay:
             except (HTTPError, URLError, ConnectionError, socket.timeout, TimeoutError) as err:
                 self.remote_socket = None
                 if(self.packet):
-                    await self.handle_clients(self.packet.getEmpty() * 100)
+                    await self.handle_clients(self.packet.getEmpty() * 10)
+                    await asyncio.sleep(self.packet.duration() * 75) # Prevents the client from getting killed with too much data
                 else:
                     await self.handle_clients(None)
 
