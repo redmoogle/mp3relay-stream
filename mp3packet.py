@@ -28,10 +28,10 @@ class MP3Packet:
     def _hex2bin(self, hexstr):
         return "{:011b}".format(int(hexstr.hex(), 16))
 
-    def IsHeader(self, hexa):
+    def isHeader(self, hexa):
         return self._hex2bin(hexa)[0:11] == '11111111111'
 
-    def decode_from_hex(self, hexa):
+    def fromHex(self, hexa):
         """
         Takes a hexadecimal input and converts it to mp3 data
         """
@@ -49,10 +49,10 @@ class MP3Packet:
         self.original = enums.ORIGINAL[binary[18]]
         return True
 
-    def header(self):
+    def getHeader(self):
         return self.raw_header
 
-    def next_header(self):
+    def nextHeader(self):
         """
         Finds where the next header will show up
         """
@@ -78,11 +78,11 @@ class MP3Packet:
             return math.floor(144 * (self.bitrate/self.samplerate) + padding_add) + crc_add
         return 8
 
-    def duration(self):
+    def getDuration(self):
         """
         Duration of this frame
         """
         return self.next_header()/self.bitrate
-    
+
     def getEmpty(self):
         return self.raw_header + (b"\x00" * (self.next_header() - 4))

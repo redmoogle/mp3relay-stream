@@ -5,13 +5,13 @@ import json
 if __name__ == '__main__':
     relays = []
 
-    def start_relays():
+    def startRelays():
         for relay in relays:
-            relay.start_relay()
+            relay.startRelay()
 
-    def stop_relays():
+    def stopRelays():
         for relay in relays:
-            relay.stop_relay()
+            relay.stopRelay()
 
     with open('config.json', 'r') as configjson:
         config = json.load(configjson)
@@ -39,13 +39,13 @@ if __name__ == '__main__':
                     print(f"Started 1 relay")
                 else:
                     print(f"Started {len(relays)} relays")
-                start_relays()
+                startRelays()
             if(inputstr == "2"):
                 if(len(relays) == 1):
                     print(f"Stopped 1 relay")
                 else:
                     print(f"Stopped {len(relays)} relays")
-                stop_relays()
+                stopRelays()
             if(inputstr == "3"):
                 print("Listing Relays")
                 for relay in relays:
@@ -55,5 +55,5 @@ if __name__ == '__main__':
                     else:
                         print(f"\n\tDisconnected")
     except (KeyboardInterrupt, SystemExit):
-        stop_relays()
+        stopRelays()
 
