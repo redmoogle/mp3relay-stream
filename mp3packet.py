@@ -9,44 +9,61 @@ class MP3Packet:
         self.bitrate: float = None
         self.samplerate: int = None
         self.padding: bool = None
-        self.private: str = None
+        self.private: bool = None
         self.stereo: str = None
-        self.copyrighted: str = None
-        self.original: str = None
+        self.copyrighted: bool = None
+        self.original: bool = None
 
         self.raw_header = None
 
     def __repr__(self):
         return f'''        MPEG Version: v{self.mpeg} | Layer: {self.layer}
         Bitrate: {self.bitrate/1000}kbps | Sample Rate: {self.samplerate}Hz
-        {self.private} | {self.copyrighted} | {self.original} | {self.stereo}
+        {"Private" if self.private else "Public"} | {"Copyrighted" if self.copyrighted else "Uncopyrighted"} | {"Original" if self.original else "Copied"} | {self.stereo}
 
         Extras:
         CRC: {self.crc} | Padding: {self.padding} | Next Header in {self.next_header()} Bytes
         '''
 
-    def _hex2bin(self, hexstr):
-        return "{:011b}".format(int(hexstr.hex(), 16))
+    def isHeader(self, bytesIn: bytes):
+        funnyInt = bytesIn.hex()
+        if(len(funnyInt) != 8):
+            print("uh oh")
+        return (int.from_bytes(bytesIn, "big") & 4292870144) == 4292870144
 
-    def isHeader(self, hexa):
-        return self._hex2bin(hexa)[0:11] == '11111111111'
-
-    def fromHex(self, hexa):
+    def fromHex(self, bytesIn):
         """
         Takes a hexadecimal input and converts it to mp3 data
         """
-        self.raw_header = hexa
-        binary = "{:08b}".format(int(hexa.hex(), 16))[11:32]
-        self.mpeg = enums.MPEG_ID[binary[0:2]]
-        self.layer = enums.LAYER_ID[binary[2:4]]
-        self.crc = enums.CRC_MODE[binary[4]]
-        self.bitrate = enums.BITRATE[binary[5:9]][self.mpeg][self.layer]
-        self.samplerate = enums.SAMPLE_FREQ[binary[9:11]][self.mpeg]
-        self.padding = enums.PADDING[binary[11]]
-        self.private = enums.PRIVATE[binary[12]]
-        self.stereo = enums.STEREO[binary[13:15]] # 15-17 contain some random joint stero stuff
-        self.copyrighted = enums.COPYRIGHT[binary[17]]
-        self.original = enums.ORIGINAL[binary[18]]
+        self.raw_header = bytesIn
+        bytesIn = int.from_bytes(bytesIn, "big")
+        bytesIn >>= 2 # Shift the emphasis bits out
+        self.original = (bytesIn & 1) == 1
+        bytesIn >>= 1 # Shift the orignal bit out
+        self.copyrighted = (bytesIn & 1) == 1
+        bytesIn >>= 3 # Shift the copyright bit out & mode bits out
+        self.stereo = enums.STEREO[bytesIn & 3]
+        bytesIn >>= 2 # Shift the audio mode out
+        self.private = (bytesIn & 1) == 1
+        bytesIn >>= 1 # Shift the private bit out
+        self.padding = (bytesIn & 1) == 1
+        bytesIn >>= 1 # Shift the padding bit out
+
+        _sampleratebits = bytesIn & 3
+        bytesIn >>= 2 # Shift the sampling rate bits out
+
+        # Hold on to the value temporarily
+        _bitratebits = bytesIn & 15
+        bytesIn >>= 4 # Shift the bitrate bits out
+
+        self.crc = (bytesIn & 1) == 0
+        bytesIn >>= 1 # Shift the crc bit out
+        self.layer = 4 - (bytesIn & 3)
+        bytesIn >>= 2 # Shift the layer bits out
+        self.mpeg = enums.MPEG_ID[bytesIn & 3]
+
+        self.samplerate = enums.SAMPLE_FREQ[_sampleratebits].get(self.mpeg, 0)
+        self.bitrate = enums.BITRATE[_bitratebits].get(self.mpeg, {}).get(self.layer, 0)
         return True
 
     def getHeader(self):
@@ -61,6 +78,9 @@ class MP3Packet:
         # FrameLengthInBytes = (12 * BitRate / SampleRate + Padding) * 4
         # For Layer II & III files use this formula:
         # FrameLengthInBytes = 144 * BitRate / SampleRate + Padding
+        if(self.bitrate == 0 or self.samplerate == 0):
+            return 0
+        
         padding_add = 0
         crc_add = 0
         if self.crc == True:
@@ -82,7 +102,7 @@ class MP3Packet:
         """
         Duration of this frame
         """
-        return self.next_header()/self.bitrate
+        return self.nextHeader()/self.bitrate
 
     def getEmpty(self):
         return self.raw_header + (b"\x00" * (self.next_header() - 4))

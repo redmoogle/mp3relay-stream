@@ -1,6 +1,7 @@
 import socket
 import asyncio
 from threading import Thread
+import time
 from urllib.error import HTTPError, URLError
 import urllib.request as urlreq
 from mp3packet import MP3Packet
@@ -56,7 +57,7 @@ class MP3Relay:
         for client in self.clients:
             try:
                 client.send(buffer)
-            except (ConnectionError, TimeoutError): # TODO find an alternative that doesn't use exceptions
+            except (ConnectionError, ConnectionAbortedError, TimeoutError): # TODO find an alternative that doesn't use exceptions
                 self.removing.append(client)
                 self.relayReport("A Client Disconnected")
             except BlockingIOError:
@@ -73,7 +74,7 @@ class MP3Relay:
         await self.connect()
         while(True):
             try:
-                await asyncio.sleep(self.packet.duration()*9) # Give time for other things
+                await asyncio.sleep(self.packet.getDuration()*9) # Give time for other things
                 if(self.remote_socket == None):
                     self.relayReport("Detected a broken socket; Reconnecting to the stream")
                     await self.connect()
@@ -83,7 +84,7 @@ class MP3Relay:
                     await self.connect()
                     continue
             except (HTTPError, ConnectionError, URLError, TimeoutError) as err:
-                self.relayReport(f"{err}")
+                self.relayReport(f"Error while reading stream: {err}")
                 await self.connect()
                 continue
 
@@ -99,8 +100,10 @@ class MP3Relay:
         while self.remote_socket is None:
             try:
                 self.remote_socket = urlreq.urlopen(self.stream, timeout=5)
+                self.relayReport("Reconnected to remote stream")
             except (HTTPError, URLError, ConnectionError, TimeoutError) as err:
                 self.remote_socket = None
+                self.relayReport(f"Error while connecting: {err}")
                 if(self.packet):
                     await self.handleClients(self.packet.getEmpty() * 10)
                     await asyncio.sleep(self.packet.getDuration() * 75) # Prevents the client from getting killed with too much data
@@ -114,17 +117,18 @@ class MP3Relay:
             if _packet.isHeader(buffer):
                 _packet.fromHex(buffer)
                 _packetsize = _packet.nextHeader()
-                self.remote_socket.read(_packetsize-4)
+                self.remote_socket.read(max(4, _packetsize - 4))
                 buffer = self.remote_socket.read(4)
                 if _packet.isHeader(buffer):
                     _packet.fromHex(buffer)
                     _packetsize = _packet.nextHeader()
                     syncs += 1
-                    self.remote_socket.read(_packetsize-4)
+                    self.remote_socket.read(max(0, _packetsize - 4))
                 else:
                     syncs = max(0, syncs - 1) # garbage data
 
         self.packet = _packet
+        self.packetsize = _packetsize
         self.relayReport("Synchronized with the mp3 stream")
 
     async def initiateClient(self, conn):
@@ -175,4 +179,4 @@ if __name__ == '__main__': # For debugging
     relay.stream = "https://hitradio-maroc.ice.infomaniak.ch/hitradio-maroc-128.mp3"
     relay.port = 5222
     relay.bind_address = "127.0.0.1"
-    relay.start_relay()
+    relay.startRelay()
