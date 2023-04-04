@@ -1,5 +1,9 @@
-import enums
+"""
+Base MP3 Packet
+"""
+
 import math
+import enums
 
 class MP3Packet:
     def __init__(self):
@@ -22,7 +26,7 @@ class MP3Packet:
         {"Private" if self.private else "Public"} | {"Copyrighted" if self.copyrighted else "Uncopyrighted"} | {"Original" if self.original else "Copied"} | {self.stereo}
 
         Extras:
-        CRC: {self.crc} | Padding: {self.padding} | Next Header in {self.next_header()} Bytes
+        CRC: {self.crc} | Padding: {self.padding} | Next Header in {self.nextHeader()} Bytes
         '''
 
     def isHeader(self, bytesIn: bytes):
@@ -83,16 +87,16 @@ class MP3Packet:
         
         padding_add = 0
         crc_add = 0
-        if self.crc == True:
+        if self.crc:
             crc_add = 2
 
         if(self.layer == 1):
-            if self.padding == True:
+            if self.padding:
                 padding_add = 4
 
             return math.floor((12 * (self.bitrate/self.samplerate) + padding_add) * 4) + crc_add
         elif (self.layer == 2) or (self.layer == 3):
-            if self.padding == True:
+            if self.padding:
                 padding_add = 1
 
             return math.floor(144 * (self.bitrate/self.samplerate) + padding_add) + crc_add
@@ -105,4 +109,4 @@ class MP3Packet:
         return self.nextHeader()/self.bitrate
 
     def getEmpty(self):
-        return self.raw_header + (b"\x00" * (self.next_header() - 4))
+        return self.raw_header + (b"\x00" * (self.nextHeader() - 4))

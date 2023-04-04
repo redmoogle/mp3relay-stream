@@ -1,11 +1,10 @@
 import socket
 import asyncio
 from threading import Thread
-import time
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 import urllib.request as urlreq
-from mp3packet import MP3Packet
 import logging
+from mp3packet import MP3Packet
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -57,7 +56,7 @@ class MP3Relay:
         for client in self.clients:
             try:
                 client.send(buffer)
-            except (ConnectionError, ConnectionAbortedError, TimeoutError): # TODO find an alternative that doesn't use exceptions
+            except (ConnectionAbortedError, TimeoutError): # TODO find an alternative that doesn't use exceptions
                 self.removing.append(client)
                 self.relayReport("A Client Disconnected")
             except BlockingIOError:
@@ -75,15 +74,15 @@ class MP3Relay:
         while(True):
             try:
                 await asyncio.sleep(self.packet.getDuration()*9) # Give time for other things
-                if(self.remote_socket == None):
+                if(self.remote_socket is None):
                     self.relayReport("Detected a broken socket; Reconnecting to the stream")
                     await self.connect()
                 buffer = self.remote_socket.read(self.packetsize*10) # Recieve 10 mp3 packets about 0.26s of audio
-                if(buffer == b""):
+                if(len(buffer) == 0):
                     self.relayReport("Detected an empty buffer; Reconnecting to the stream")
                     await self.connect()
                     continue
-            except (HTTPError, ConnectionError, URLError, TimeoutError) as err:
+            except (HTTPError, ConnectionError, TimeoutError) as err:
                 self.relayReport(f"Error while reading stream: {err}")
                 await self.connect()
                 continue
@@ -101,7 +100,7 @@ class MP3Relay:
             try:
                 self.remote_socket = urlreq.urlopen(self.stream, timeout=5)
                 self.relayReport("Reconnected to remote stream")
-            except (HTTPError, URLError, ConnectionError, TimeoutError) as err:
+            except (HTTPError, ConnectionError, TimeoutError) as err:
                 self.remote_socket = None
                 self.relayReport(f"Error while connecting: {err}")
                 if(self.packet):
