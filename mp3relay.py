@@ -56,7 +56,7 @@ class MP3Relay:
         for client in self.clients:
             try:
                 client.send(buffer)
-            except (ConnectionAbortedError, TimeoutError): # TODO find an alternative that doesn't use exceptions
+            except (ConnectionError, TimeoutError): # TODO find an alternative that doesn't use exceptions
                 self.removing.append(client)
                 self.relayReport("A Client Disconnected")
             except BlockingIOError:
