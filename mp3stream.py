@@ -1,11 +1,11 @@
 import json
 from mp3relay import MP3Relay
 
-def startRelays(relays: list(MP3Relay)):
+def startRelays(relays: list[MP3Relay]):
     for _relay in relays:
         _relay.startRelay()
 
-def stopRelays(relays: list(MP3Relay)):
+def stopRelays(relays: list[MP3Relay]):
     for _relay in relays:
         _relay.stopRelay()
 
