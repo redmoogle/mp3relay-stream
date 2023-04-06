@@ -1,7 +1,7 @@
 import socket
 import asyncio
 from threading import Thread
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 import urllib.request as urlreq
 import logging
 from mp3packet import MP3Packet
@@ -82,7 +82,7 @@ class MP3Relay:
                     self.relayReport("Detected an empty buffer; Reconnecting to the stream")
                     await self.connect()
                     continue
-            except (HTTPError, ConnectionError, TimeoutError) as err:
+            except (ConnectionError, TimeoutError, URLError) as err:
                 self.relayReport(f"Error while reading stream: {err}")
                 await self.connect()
                 continue
