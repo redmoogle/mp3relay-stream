@@ -1,7 +1,7 @@
 import socket
 import asyncio
 from threading import Thread
-from urllib.error import HTTPError, URLError
+from urllib.error import URLError
 import urllib.request as urlreq
 import logging
 from mp3packet import MP3Packet
@@ -100,7 +100,7 @@ class MP3Relay:
             try:
                 self.remote_socket = urlreq.urlopen(self.stream, timeout=5)
                 self.relayReport("Reconnected to remote stream")
-            except (HTTPError, ConnectionError, TimeoutError) as err:
+            except (ConnectionError, TimeoutError, URLError) as err:
                 self.remote_socket = None
                 self.relayReport(f"Error while connecting: {err}")
                 if(self.packet):
